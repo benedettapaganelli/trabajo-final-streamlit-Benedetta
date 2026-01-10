@@ -200,11 +200,14 @@ def tab1_seasonality(df):
     return dow, weekly_mean, monthly_mean
 
 df = load_data("parte_1.csv.gz", "parte_2.csv.gz")
-df_tx = (
-    df[["date", "store_nbr", "state", "transactions", "year"]]
-    .groupby(["date", "store_nbr", "state", "year"], as_index=False)["transactions"]
-    .max()
-)
+@st.cache_data(ttl=3600)
+def build_df_tx(df: pd.DataFrame) -> pd.DataFrame:
+    base = df[["date", "store_nbr", "state", "year", "transactions"]].dropna(subset=["date", "store_nbr", "state"])
+    # transactions è ripetuto per ogni family nello stesso giorno/store → teniamo UNA riga
+    base = base.drop_duplicates(subset=["date", "store_nbr", "state", "year"], keep="first")
+    return base
+
+df_tx = build_df_tx(df)
 
 DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
