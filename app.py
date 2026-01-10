@@ -509,11 +509,6 @@ with tab3:
 with tab4:
     SCALE = SCALE_TAB4
     st.subheader("Análisis adicional")
-
-    load_tab4 = st.toggle("Cargar gráficos avanzados (reduce crashes)", value=False)
-    if not load_tab4:
-        st.info("Activa el toggle para cargar los gráficos. (Ahorra memoria)")
-        st.stop()
         
     df_flag = df[["sales", "onpromotion"]].copy()
     df_flag["promo_flag"] = np.where(df_flag["onpromotion"] > 0, "Promoción", "Sin promoción")
