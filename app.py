@@ -124,27 +124,36 @@ def style_plotly(fig, title: str | None = None, x_title: str | None = None, y_ti
 
 @st.cache_data(show_spinner=True)
 def load_data(path1: str, path2: str) -> pd.DataFrame:
-    df1 = pd.read_csv(path1, low_memory=False, compression="gzip")
-    df2 = pd.read_csv(path2, low_memory=False, compression="gzip")
+    usecols = [
+        "date", "store_nbr", "sales", "onpromotion", "transactions",
+        "family", "state", "holiday_type", "store_type"
+    ]
+
+    dtypes = {
+        "store_nbr": "Int64",
+        "sales": "float32",
+        "onpromotion": "Int64",
+        "transactions": "float32",
+        "family": "category",
+        "state": "category",
+        "holiday_type": "category",
+        "store_type": "category",
+    }
+
+    df1 = pd.read_csv(path1, compression="gzip", usecols=usecols, dtype=dtypes)
+    df2 = pd.read_csv(path2, compression="gzip", usecols=usecols, dtype=dtypes)
+
     df = pd.concat([df1, df2], ignore_index=True)
 
-    if "Unnamed: 0" in df.columns:
-        df = df.drop(columns=["Unnamed: 0"])
-
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df["store_nbr"] = pd.to_numeric(df["store_nbr"], errors="coerce").astype("Int64")
-    df["sales"] = pd.to_numeric(df["sales"], errors="coerce").fillna(0.0)
-    df["onpromotion"] = pd.to_numeric(df["onpromotion"], errors="coerce").fillna(0).astype("Int64")
-    df["transactions"] = pd.to_numeric(df["transactions"], errors="coerce")
 
-    if "year" not in df.columns:
-        df["year"] = df["date"].dt.year
-    if "month" not in df.columns:
-        df["month"] = df["date"].dt.month
-    if "week" not in df.columns:
-        df["week"] = df["date"].dt.isocalendar().week.astype(int)
-    if "day_of_week" not in df.columns:
-        df["day_of_week"] = df["date"].dt.day_name()
+    df["year"] = df["date"].dt.year.astype("Int16")
+    df["month"] = df["date"].dt.month.astype("Int8")
+    df["week"] = df["date"].dt.isocalendar().week.astype("Int16")
+    df["day_of_week"] = df["date"].dt.day_name().astype("category")
+
+    df["sales"] = df["sales"].fillna(0)
+    df["onpromotion"] = df["onpromotion"].fillna(0)
 
     return df
 
