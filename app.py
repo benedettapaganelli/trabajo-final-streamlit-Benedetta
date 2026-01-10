@@ -512,7 +512,7 @@ with tab4:
         
     df_flag = df[["sales", "onpromotion"]].copy()
     df_flag["promo_flag"] = np.where(df_flag["onpromotion"] > 0, "Promoción", "Sin promoción")
-    sample = df_flag.sample(min(20_000, len(df_flag)), random_state=7)
+    sample = df_flag.sample(min(10_000, len(df_flag)), random_state=7)
 
     sample_box = sample[sample["sales"] > 0]
 
@@ -578,27 +578,4 @@ with tab4:
             st.plotly_chart(fig_stype, use_container_width=True)
 
    
-    # Heatmap: ventas medias por mes y día de la semana
-    heat = df.groupby(["month", "day_of_week"], as_index=False)["sales"].mean()
-
-    DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    heat["day_of_week"] = pd.Categorical(heat["day_of_week"], categories=DAY_ORDER, ordered=True)
-
-    heat_pivot = heat.pivot(index="day_of_week", columns="month", values="sales")
-
-    fig_heat = px.imshow(
-        heat_pivot,
-        color_continuous_scale=SCALE,
-        labels=dict(x="Mes", y="Día de la semana", color="Ventas medias"),
-        aspect="auto"
-    )
-
-    fig_heat = style_plotly(
-        fig_heat,
-        "Mapa de calor: ventas medias por mes y día de la semana",
-        "Mes",
-        "Día de la semana"
-    )
-
-    st.plotly_chart(fig_heat, use_container_width=True)
-    st.caption("El mapa de calor permite identificar patrones temporales de ventas y días con mayor potencial comercial.")
+   
