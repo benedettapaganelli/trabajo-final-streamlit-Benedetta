@@ -122,7 +122,7 @@ def style_plotly(fig, title: str | None = None, x_title: str | None = None, y_ti
     return fig
 
 
-@st.cache_data(show_spinner=True)
+@st.cache_data(show_spinner=True, ttl=3600)
 def load_data(path1: str, path2: str) -> pd.DataFrame:
     usecols = [
         "date", "store_nbr", "sales", "onpromotion", "transactions",
@@ -157,10 +157,54 @@ def load_data(path1: str, path2: str) -> pd.DataFrame:
 
     return df
 
+@st.cache_data(ttl=3600)
+def tab1_top_products(df):
+    return (
+        df.groupby("family", as_index=False)["sales"]
+          .sum()
+          .sort_values("sales", ascending=False)
+          .head(10)
+    )
+
+@st.cache_data(ttl=3600)
+def tab1_store_sales(df):
+    return (
+        df.groupby("store_nbr", as_index=False)["sales"]
+          .sum()
+          .dropna(subset=["store_nbr"])
+    )
+
+@st.cache_data(ttl=3600)
+def tab1_promo_sales_store(df):
+    return (
+        df.loc[df["onpromotion"] > 0]
+          .groupby("store_nbr", as_index=False)["sales"]
+          .sum()
+          .sort_values("sales", ascending=False)
+          .head(10)
+    )
+
+@st.cache_data(ttl=3600)
+def tab1_seasonality(df):
+    # identico a quello che fai ora: mean su sales per day_of_week
+    dow = df.groupby("day_of_week", as_index=False)["sales"].mean()
+
+    # identico: prima somma per (year, week), poi media per week
+    weekly = df.groupby(["year", "week"], as_index=False)["sales"].sum()
+    weekly_mean = weekly.groupby("week", as_index=False)["sales"].mean().sort_values("week")
+
+    # identico: prima somma per (year, month), poi media per month
+    monthly = df.groupby(["year", "month"], as_index=False)["sales"].sum()
+    monthly_mean = monthly.groupby("month", as_index=False)["sales"].mean().sort_values("month")
+
+    return dow, weekly_mean, monthly_mean
 
 df = load_data("parte_1.csv.gz", "parte_2.csv.gz")
-
-df_tx = df[["date", "store_nbr", "state", "transactions", "year"]].drop_duplicates(["date", "store_nbr"])
+df_tx = (
+    df[["date", "store_nbr", "state", "transactions", "year"]]
+    .groupby(["date", "store_nbr", "state", "year"], as_index=False)["transactions"]
+    .max()
+)
 
 DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -198,12 +242,7 @@ with tab1:
     st.subheader("Análisis y distribuciones")
 
     # Top 10 productos por ventas totales
-    prod_sales = (
-        df.groupby("family", as_index=False)["sales"]
-        .sum()
-        .sort_values("sales", ascending=False)
-        .head(10)
-    )
+    prod_sales = tab1_top_products(df)
 
     fig_top_prod = px.bar(
         prod_sales,
@@ -221,11 +260,7 @@ with tab1:
     st.plotly_chart(fig_top_prod, use_container_width=True)
 
     # Distribución ventas totales por tienda
-    store_sales = (
-        df.groupby("store_nbr", as_index=False)["sales"]
-        .sum()
-        .dropna(subset=["store_nbr"])
-    )
+    store_sales = tab1_store_sales(df)
 
     NBINS = 60
     counts, edges = np.histogram(store_sales["sales"].values, bins=NBINS)
@@ -273,15 +308,7 @@ with tab1:
 
 
     # Top 10 tiendas por ventas en promoción
-    promo_sales_store = (
-        df.loc[df["onpromotion"] > 0]
-        .groupby("store_nbr", as_index=False)["sales"]
-        .sum()
-        .sort_values("sales", ascending=False)
-        .head(10)
-        .copy()
-    )
-
+    promo_sales_store = tab1_promo_sales_store(df).copy()
     promo_sales_store["store_nbr"] = promo_sales_store["store_nbr"].astype(str)
     order = promo_sales_store.sort_values("sales", ascending=True)["store_nbr"].tolist()
 
@@ -309,12 +336,15 @@ with tab1:
 
     st.divider()
     st.subheader("Estacionalidad")
+    
+   
+    dow, weekly_mean, monthly_mean = tab1_seasonality(df)
 
+    
     colA, colB = st.columns(2)
 
    
     # Ventas medias por día de la semana
-    dow = df.groupby("day_of_week", as_index=False)["sales"].mean()
     dow["day_of_week"] = pd.Categorical(dow["day_of_week"], categories=DAY_ORDER, ordered=True)
     dow = dow.sort_values("day_of_week")
 
@@ -336,8 +366,6 @@ with tab1:
         st.plotly_chart(fig_dow, use_container_width=True)
    
     # Ventas medias por semana del año
-    weekly = df.groupby(["year", "week"], as_index=False)["sales"].sum()
-    weekly_mean = weekly.groupby("week", as_index=False)["sales"].mean().sort_values("week")
 
     fig_week = px.line(
         weekly_mean,
@@ -352,9 +380,7 @@ with tab1:
         st.plotly_chart(fig_week, use_container_width=True)
 
     # Ventas medias por mes 
-    monthly = df.groupby(["year", "month"], as_index=False)["sales"].sum()
-    monthly_mean = monthly.groupby("month", as_index=False)["sales"].mean().sort_values("month")
-
+    
     fig_month = px.line(
         monthly_mean,
         x="month",
@@ -484,9 +510,14 @@ with tab4:
     SCALE = SCALE_TAB4
     st.subheader("Análisis adicional")
 
-    df_flag = df.copy()
+    load_tab4 = st.toggle("Cargar gráficos avanzados (reduce crashes)", value=False)
+    if not load_tab4:
+        st.info("Activa el toggle para cargar los gráficos. (Ahorra memoria)")
+        st.stop()
+        
+    df_flag = df[["sales", "onpromotion"]].copy()
     df_flag["promo_flag"] = np.where(df_flag["onpromotion"] > 0, "Promoción", "Sin promoción")
-    sample = df_flag.sample(min(200_000, len(df_flag)), random_state=7)
+    sample = df_flag.sample(min(20_000, len(df_flag)), random_state=7)
 
     sample_box = sample[sample["sales"] > 0]
 
