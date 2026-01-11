@@ -206,6 +206,27 @@ def build_df_tx(df: pd.DataFrame) -> pd.DataFrame:
     base = base.drop_duplicates(subset=["date", "store_nbr", "state", "year"], keep="first")
     return base
 
+@st.cache_data(ttl=3600)
+def tab4_box_sample(df: pd.DataFrame, n: int = 10_000) -> pd.DataFrame:
+    df_flag = df[["sales", "onpromotion"]].copy()
+    df_flag["promo_flag"] = np.where(df_flag["onpromotion"] > 0, "Promoción", "Sin promoción")
+    sample = df_flag.sample(min(n, len(df_flag)), random_state=7)
+    return sample[sample["sales"] > 0]
+
+@st.cache_data(ttl=3600)
+def tab4_aggregations(df: pd.DataFrame):
+    holiday = (
+        df.groupby("holiday_type", as_index=False, observed=True)["sales"]
+          .mean()
+          .sort_values("sales", ascending=False)
+    )
+    stype = (
+        df.groupby("store_type", as_index=False, observed=True)["sales"]
+          .sum()
+          .sort_values("sales", ascending=False)
+    )
+    return holiday, stype
+
 # DEBUG MINIMA: stampiamo progressi per identificare il punto di crash
 import os, traceback, sys
 
@@ -556,13 +577,19 @@ print("DEBUG: entering tab4", flush=True)
 with tab4:
     SCALE = SCALE_TAB4
     st.subheader("Análisis adicional")
-        
-    df_flag = df[["sales", "onpromotion"]].copy()
-    df_flag["promo_flag"] = np.where(df_flag["onpromotion"] > 0, "Promoción", "Sin promoción")
-    sample = df_flag.sample(min(10_000, len(df_flag)), random_state=7)
 
-    sample_box = sample[sample["sales"] > 0]
+    # Evita che Tab4 parta subito (utile per Streamlit Cloud / health check)
+    run_tab4 = st.checkbox("Mostrar análisis extra (Tab 4)", value=False)
 
+    if not run_tab4:
+        st.info("Activa el checkbox para calcular los gráficos de la pestaña 4.")
+        st.stop()
+
+    # Usa le funzioni cacheate (quelle che hai già definito sopra)
+    sample_box = tab4_box_sample(df, n=10_000)
+    holiday, stype = tab4_aggregations(df)
+
+    # ---- BOX PLOT
     fig_box = px.box(
         sample_box,
         x="promo_flag",
@@ -570,38 +597,23 @@ with tab4:
         points=False,
         color="promo_flag",
         color_discrete_map={
-            "Promoción": "#EA580C",      
-            "Sin promoción": "#FDBA74",  
+            "Promoción": "#EA580C",
+            "Sin promoción": "#FDBA74",
         }
     )
     fig_box.update_xaxes(tickformat=None)
     fig_box.update_yaxes(type="log")
-
-    fig_box = style_plotly(
-        fig_box,
-        "Ventas: promoción vs sin promoción (escala logarítmica)",
-        "Grupo",
-        "Ventas (log)"
-    )
-
+    fig_box = style_plotly(fig_box, "Ventas: promoción vs sin promoción (escala logarítmica)", "Grupo", "Ventas (log)")
     fig_box.update_layout(showlegend=False)
-
     st.plotly_chart(fig_box, use_container_width=True)
-    print("DEBUG: rendered fig_box", flush=True)
 
-    st.caption(
-        "Se utiliza escala logarítmica para facilitar la comparación debido a la presencia de valores extremos."
-    )
+    st.caption("Se utiliza escala logarítmica para facilitar la comparación debido a la presencia de valores extremos.")
 
     col1, col2 = st.columns(2)
 
+    # ---- HOLIDAY
     with col1:
-        if df["holiday_type"].notna().any():
-            holiday = (
-                df.groupby("holiday_type", as_index=False)["sales"]
-                .mean()
-                .sort_values("sales", ascending=False)
-            )
+        if holiday is not None and len(holiday) > 0:
             fig_holiday = px.bar(
                 holiday, x="sales", y="holiday_type", orientation="h",
                 color="sales", color_continuous_scale=SCALE
@@ -609,15 +621,10 @@ with tab4:
             fig_holiday.update_layout(yaxis=dict(categoryorder="total ascending"))
             fig_holiday = style_plotly(fig_holiday, "Ventas medias por tipo de festivo", "Ventas medias", "Tipo de festivo")
             st.plotly_chart(fig_holiday, use_container_width=True)
-            print("DEBUG: rendered fig_holiday", flush=True)
 
+    # ---- STORE TYPE
     with col2:
-        if df["store_type"].notna().any():
-            stype = (
-                df.groupby("store_type", as_index=False)["sales"]
-                .sum()
-                .sort_values("sales", ascending=False)
-            )
+        if stype is not None and len(stype) > 0:
             fig_stype = px.bar(
                 stype, x="store_type", y="sales",
                 color="sales", color_continuous_scale=SCALE
@@ -625,8 +632,3 @@ with tab4:
             fig_stype.update_xaxes(tickformat=None)
             fig_stype = style_plotly(fig_stype, "Ventas totales por tipo de tienda", "Tipo de tienda", "Ventas")
             st.plotly_chart(fig_stype, use_container_width=True)
-            print("DEBUG: rendered fig_stype", flush=True)
-
-    print("DEBUG: finished tab4", flush=True)
-
-print("DEBUG: finished rendering all tabs", flush=True)
