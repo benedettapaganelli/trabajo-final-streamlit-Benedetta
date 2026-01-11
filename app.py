@@ -199,7 +199,6 @@ def tab1_seasonality(df):
 
     return dow, weekly_mean, monthly_mean
 
-df = load_data("parte_1.csv.gz", "parte_2.csv.gz")
 @st.cache_data(ttl=3600)
 def build_df_tx(df: pd.DataFrame) -> pd.DataFrame:
     base = df[["date", "store_nbr", "state", "year", "transactions"]].dropna(subset=["date", "store_nbr", "state"])
@@ -207,7 +206,27 @@ def build_df_tx(df: pd.DataFrame) -> pd.DataFrame:
     base = base.drop_duplicates(subset=["date", "store_nbr", "state", "year"], keep="first")
     return base
 
-df_tx = build_df_tx(df)
+# SAFE STARTUP: sostituisce df = load_data(...)
+import os, traceback
+
+DATA_PATHS = ("parte_1.csv.gz", "parte_2.csv.gz")
+
+missing = [p for p in DATA_PATHS if not os.path.exists(p)]
+if missing:
+    st.error("File di dati mancanti: " + ", ".join(missing))
+    st.info("Assicurati di aver committato i file nel repository o di aver impostato i path corretti.")
+    st.stop()
+
+try:
+    df = load_data(*DATA_PATHS)
+    df_tx = build_df_tx(df)
+except Exception:
+    tb = traceback.format_exc()
+    st.error("Errore durante il caricamento iniziale: il traceback è mostrato sotto e salvato in startup_traceback.txt")
+    st.text(tb)
+    with open("startup_traceback.txt", "w", encoding="utf-8") as f:
+        f.write(tb)
+    st.stop()
 
 DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -579,6 +598,3 @@ with tab4:
             fig_stype.update_xaxes(tickformat=None)
             fig_stype = style_plotly(fig_stype, "Ventas totales por tipo de tienda", "Tipo de tienda", "Ventas")
             st.plotly_chart(fig_stype, use_container_width=True)
-
-   
-   
