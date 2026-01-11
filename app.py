@@ -585,50 +585,50 @@ with tab4:
         st.info("Activa el checkbox para calcular los gráficos de la pestaña 4.")
     else:
 
-    # Usa le funzioni cacheate (quelle che hai già definito sopra)
-    sample_box = tab4_box_sample(df, n=10_000)
-    holiday, stype = tab4_aggregations(df)
-
-    # ---- BOX PLOT
-    fig_box = px.box(
-        sample_box,
-        x="promo_flag",
-        y="sales",
-        points=False,
-        color="promo_flag",
-        color_discrete_map={
-            "Promoción": "#EA580C",
-            "Sin promoción": "#FDBA74",
-        }
-    )
-    fig_box.update_xaxes(tickformat=None)
-    fig_box.update_yaxes(type="log")
-    fig_box = style_plotly(fig_box, "Ventas: promoción vs sin promoción (escala logarítmica)", "Grupo", "Ventas (log)")
-    fig_box.update_layout(showlegend=False)
-    st.plotly_chart(fig_box, use_container_width=True)
-
-    st.caption("Se utiliza escala logarítmica para facilitar la comparación debido a la presencia de valores extremos.")
-
-    col1, col2 = st.columns(2)
-
-    # ---- HOLIDAY
-    with col1:
-        if holiday is not None and len(holiday) > 0:
-            fig_holiday = px.bar(
-                holiday, x="sales", y="holiday_type", orientation="h",
-                color="sales", color_continuous_scale=SCALE
-            )
-            fig_holiday.update_layout(yaxis=dict(categoryorder="total ascending"))
-            fig_holiday = style_plotly(fig_holiday, "Ventas medias por tipo de festivo", "Ventas medias", "Tipo de festivo")
-            st.plotly_chart(fig_holiday, use_container_width=True)
-
-    # ---- STORE TYPE
-    with col2:
-        if stype is not None and len(stype) > 0:
-            fig_stype = px.bar(
-                stype, x="store_type", y="sales",
-                color="sales", color_continuous_scale=SCALE
-            )
-            fig_stype.update_xaxes(tickformat=None)
-            fig_stype = style_plotly(fig_stype, "Ventas totales por tipo de tienda", "Tipo de tienda", "Ventas")
-            st.plotly_chart(fig_stype, use_container_width=True)
+        # Usa le funzioni cacheate (quelle che hai già definito sopra)
+        sample_box = tab4_box_sample(df, n=10_000)
+        holiday, stype = tab4_aggregations(df)
+    
+        # ---- BOX PLOT
+        fig_box = px.box(
+            sample_box,
+            x="promo_flag",
+            y="sales",
+            points=False,
+            color="promo_flag",
+            color_discrete_map={
+                "Promoción": "#EA580C",
+                "Sin promoción": "#FDBA74",
+            }
+        )
+        fig_box.update_xaxes(tickformat=None)
+        fig_box.update_yaxes(type="log")
+        fig_box = style_plotly(fig_box, "Ventas: promoción vs sin promoción (escala logarítmica)", "Grupo", "Ventas (log)")
+        fig_box.update_layout(showlegend=False)
+        st.plotly_chart(fig_box, use_container_width=True)
+    
+        st.caption("Se utiliza escala logarítmica para facilitar la comparación debido a la presencia de valores extremos.")
+    
+        col1, col2 = st.columns(2)
+    
+        # ---- HOLIDAY
+        with col1:
+            if holiday is not None and len(holiday) > 0:
+                fig_holiday = px.bar(
+                    holiday, x="sales", y="holiday_type", orientation="h",
+                    color="sales", color_continuous_scale=SCALE
+                )
+                fig_holiday.update_layout(yaxis=dict(categoryorder="total ascending"))
+                fig_holiday = style_plotly(fig_holiday, "Ventas medias por tipo de festivo", "Ventas medias", "Tipo de festivo")
+                st.plotly_chart(fig_holiday, use_container_width=True)
+    
+        # ---- STORE TYPE
+        with col2:
+            if stype is not None and len(stype) > 0:
+                fig_stype = px.bar(
+                    stype, x="store_type", y="sales",
+                    color="sales", color_continuous_scale=SCALE
+                )
+                fig_stype.update_xaxes(tickformat=None)
+                fig_stype = style_plotly(fig_stype, "Ventas totales por tipo de tienda", "Tipo de tienda", "Ventas")
+                st.plotly_chart(fig_stype, use_container_width=True)
