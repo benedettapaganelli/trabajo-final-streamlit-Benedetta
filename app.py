@@ -206,24 +206,32 @@ def build_df_tx(df: pd.DataFrame) -> pd.DataFrame:
     base = base.drop_duplicates(subset=["date", "store_nbr", "state", "year"], keep="first")
     return base
 
-# SAFE STARTUP: sostituisce df = load_data(...)
-import os, traceback
+# DEBUG MINIMA: stampiamo progressi per identificare il punto di crash
+import os, traceback, sys
 
 DATA_PATHS = ("parte_1.csv.gz", "parte_2.csv.gz")
 
+print("DEBUG: before missing check", flush=True)
 missing = [p for p in DATA_PATHS if not os.path.exists(p)]
+print("DEBUG: missing ->", missing, flush=True)
+
 if missing:
     st.error("File di dati mancanti: " + ", ".join(missing))
     st.info("Assicurati di aver committato i file nel repository o di aver impostato i path corretti.")
     st.stop()
 
+print("DEBUG: before load_data call", flush=True)
 try:
     df = load_data(*DATA_PATHS)
+    print("DEBUG: after load_data", flush=True)
     df_tx = build_df_tx(df)
+    print("DEBUG: after build_df_tx", flush=True)
 except Exception:
     tb = traceback.format_exc()
-    st.error("Errore durante il caricamento iniziale: il traceback è mostrato sotto e salvato in startup_traceback.txt")
+    print("DEBUG: exception during load", tb, flush=True)
+    st.error("Errore durante il caricamento iniziale: il traceback è mostrato nella pagina.")
     st.text(tb)
+    # salvo anche il traceback su file per poterlo scaricare dai log
     with open("startup_traceback.txt", "w", encoding="utf-8") as f:
         f.write(tb)
     st.stop()
