@@ -248,6 +248,8 @@ tab1, tab2, tab3, tab4 = st.tabs(
      "Pestaña 4 - Extra"]
 )
 
+print("DEBUG: entering tab1", flush=True)
+
 # -----------------------------
 # PESTAÑA 1 - VISIÓN GLOBAL
 # -----------------------------
@@ -288,6 +290,7 @@ with tab1:
     fig_top_prod.update_traces(textposition="outside", cliponaxis=False)
     fig_top_prod = style_plotly(fig_top_prod, "Top 10 productos por ventas totales", "Ventas", "Producto (family)")
     st.plotly_chart(fig_top_prod, use_container_width=True)
+    print("DEBUG: rendered fig_top_prod", flush=True)
 
     # Distribución ventas totales por tienda
     store_sales = tab1_store_sales(df)
@@ -335,6 +338,7 @@ with tab1:
     fig_dist_store.update_layout(coloraxis_colorbar=dict(title="Frecuencia"))
 
     st.plotly_chart(fig_dist_store, use_container_width=True)
+    print("DEBUG: rendered fig_dist_store", flush=True)
 
 
     # Top 10 tiendas por ventas en promoción
@@ -363,6 +367,7 @@ with tab1:
         "Tienda (store_nbr)",
     )
     st.plotly_chart(fig_top_promo, use_container_width=True)
+    print("DEBUG: rendered fig_top_promo", flush=True)
 
     st.divider()
     st.subheader("Estacionalidad")
@@ -394,6 +399,7 @@ with tab1:
 
     with colA:
         st.plotly_chart(fig_dow, use_container_width=True)
+        print("DEBUG: rendered fig_dow", flush=True)
    
     # Ventas medias por semana del año
 
@@ -408,6 +414,7 @@ with tab1:
     fig_week = style_plotly(fig_week, "Ventas medias por semana del año", "Semana (ISO)", "Ventas medias")
     with colB:
         st.plotly_chart(fig_week, use_container_width=True)
+        print("DEBUG: rendered fig_week", flush=True)
 
     # Ventas medias por mes 
     
@@ -421,6 +428,9 @@ with tab1:
     fig_month.update_traces(hovertemplate="Mes %{x}<br>Ventas %{y:,.0f}<extra></extra>")
     fig_month = style_plotly(fig_month, "Ventas medias por mes", "Mes", "Ventas medias")
     st.plotly_chart(fig_month, use_container_width=True)
+    print("DEBUG: finished tab1 seasonality plots", flush=True)
+
+print("DEBUG: entering tab2", flush=True)
 
 # -----------------------------
 # PESTAÑA 2 - ANÁLISIS POR TIENDA
@@ -444,6 +454,7 @@ with tab2:
     fig_store_year.update_xaxes(tickformat=None)
 
     st.plotly_chart(fig_store_year, use_container_width=True)
+    print("DEBUG: rendered fig_store_year", flush=True)
 
     # Totale "prodotti venduti" = quantità venduta (somma sales)
     total_productos_vendidos = float(df_s["sales"].sum())
@@ -455,6 +466,8 @@ with tab2:
     c1.metric("Número total de productos vendidos", f"{total_productos_vendidos:,.0f}")
     c2.metric("Número total de productos vendidos en promoción", f"{total_productos_vendidos_promo:,.0f}")
 
+
+print("DEBUG: entering tab3", flush=True)
 
 # -----------------------------
 # PESTAÑA 3 - ANÁLISIS POR ESTADO
@@ -484,6 +497,7 @@ with tab3:
     fig_tx.update_xaxes(tickformat=None)
 
     st.plotly_chart(fig_tx, use_container_width=True)
+    print("DEBUG: rendered fig_tx", flush=True)
 
 
     rank_store = (
@@ -517,6 +531,7 @@ with tab3:
         "Tienda (store_nbr)",
     )
     st.plotly_chart(fig_rank, use_container_width=True)
+    print("DEBUG: rendered fig_rank", flush=True)
 
     if len(rank_store) > 0:
         top_store = str(rank_store.iloc[0]["store_nbr"])
@@ -532,6 +547,8 @@ with tab3:
                 f"En el estado {state_sel}, la tienda con más ventas es {top_store} "
                 f"y el producto más vendido es {top_prod.iloc[0]['family']}."
             )
+
+print("DEBUG: entering tab4", flush=True)
 
 # -----------------------------
 # PESTAÑA 4 - EXTRA
@@ -570,6 +587,7 @@ with tab4:
     fig_box.update_layout(showlegend=False)
 
     st.plotly_chart(fig_box, use_container_width=True)
+    print("DEBUG: rendered fig_box", flush=True)
 
     st.caption(
         "Se utiliza escala logarítmica para facilitar la comparación debido a la presencia de valores extremos."
@@ -591,6 +609,7 @@ with tab4:
             fig_holiday.update_layout(yaxis=dict(categoryorder="total ascending"))
             fig_holiday = style_plotly(fig_holiday, "Ventas medias por tipo de festivo", "Ventas medias", "Tipo de festivo")
             st.plotly_chart(fig_holiday, use_container_width=True)
+            print("DEBUG: rendered fig_holiday", flush=True)
 
     with col2:
         if df["store_type"].notna().any():
@@ -606,3 +625,8 @@ with tab4:
             fig_stype.update_xaxes(tickformat=None)
             fig_stype = style_plotly(fig_stype, "Ventas totales por tipo de tienda", "Tipo de tienda", "Ventas")
             st.plotly_chart(fig_stype, use_container_width=True)
+            print("DEBUG: rendered fig_stype", flush=True)
+
+    print("DEBUG: finished tab4", flush=True)
+
+print("DEBUG: finished rendering all tabs", flush=True)
