@@ -583,7 +583,7 @@ with tab4:
 
     if not run_tab4:
         st.info("Activa el checkbox para calcular los gráficos de la pestaña 4.")
-        st.stop()
+    else:
 
     # Usa le funzioni cacheate (quelle che hai già definito sopra)
     sample_box = tab4_box_sample(df, n=10_000)
